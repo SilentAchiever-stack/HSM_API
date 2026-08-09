@@ -16,9 +16,18 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-app.use(cors());
+app.use(cors({origin:true,
+  credentials:true,
+  methods:["GET","PUT","PATCH","POST","DELETE"],
+  allowedHeaders:['content-type']
+}))
+
+app.get('/', (req, res) => {
+  res.send(landingPage);
+});
+
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+/* app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); */
 
 app.use('/api/users',        authRoute);
 app.use('/api/guest',        guestRoute);
