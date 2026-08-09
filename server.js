@@ -10,6 +10,7 @@ const guestRoute         = require('./Route/guestRoute');
 const receptionistRoute  = require('./Route/receptionistRoute');
 const adminRoute         = require('./Route/adminRoute');
 const publicRoute = require('./Route/publicRoute');
+const landingpage = require('./landingpage')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
