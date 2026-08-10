@@ -244,5 +244,3 @@ than assuming a running container reflects the latest edits.
 - Add pagination to endpoints that return large lists, like all bookings or all rooms
 - Add email notifications for booking confirmations and payment receipts
 - Add an admin dashboard summary endpoint (occupancy rate, revenue, open issues)
-- Move file uploads fully to memory storage instead of writing to disk before
-  forwarding to Cloudinary, to simplify deployment on read-only filesystems
