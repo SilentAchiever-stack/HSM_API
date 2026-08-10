@@ -52,7 +52,7 @@ const ConfirmPayment = async (req, res) => {
 };
 
 
-const AddRoom = async (req, res) => {
+/* const AddRoom = async (req, res) => {
     const { hotelId, room_number, type, price } = req.body;
 
     if (!hotelId || !room_number || !type || !price) {
@@ -68,6 +68,49 @@ const AddRoom = async (req, res) => {
         if (req.file) {
             const { URL } = await uploadFile(req.file.path);
             fs.unlinkSync(req.file.path);
+            imageUrl = URL;
+        }
+
+        let room = await Room.create({
+            hotel: hotelId,
+            room_number,
+            type,
+            price: parseFloat(price),
+            imageUrl,
+            status: 'available'
+        });
+
+        room = await Room.findById(room._id).populate('hotel');
+
+        return res.status(201).json({
+            success: true,
+            message: 'Room added successfully',
+            data: room
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}; */
+
+const AddRoom = async (req, res) => {
+    const { hotelId, room_number, type, price } = req.body;
+
+    if (!hotelId || !room_number || !type || !price) {
+        return res.status(400).json({
+            success: false,
+            message: 'hotelId, room_number, type and price are all required'
+        });
+    }
+
+    try {
+        let imageUrl = null;
+
+        if (req.file) {
+            const { URL } = await uploadFile(req.file.buffer);
             imageUrl = URL;
         }
 
