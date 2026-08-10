@@ -1,0 +1,85 @@
+MiddleWare/uploadMiddleWare.js
+javascript
+const multer = require('multer');
+
+Multer is the library that handles file uploads in Express. Normally, Express can't read file data out of a request the way it reads JSON — files come in a special format (multipart/form-data), and Multer is what parses that and hands you the file in a usable form.
+
+javascript
+const storage = multer.memoryStorage();
+
+This tells Multer where to put the uploaded file while it's being processed. memoryStorage() means: "don't save it to a folder on the hard drive — just hold it in RAM (memory), as raw bytes, temporarily." This is the key change from before — previously, diskStorage would physically write the file into an uploads/rooms/ folder on your server's disk.
+
+javascript
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+
+This creates the actual Multer instance you'll use in your routes. storage plugs in the memory storage setting from above. limits: { fileSize: 5 * 1024 * 1024 } caps uploads at 5 megabytes (5 × 1024 × 1024 bytes) — if someone tries to upload something bigger, Multer rejects it automatically before your code even runs.
+
+javascript
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (allowed.includes(file.mimetype)) cb(null, true);
+        else cb(new Error('Only image files are allowed (jpg, png, webp)'));
+    }
+});
+
+This runs before the file is accepted, checking whether it's actually an allowed image type. file.mimetype is a label the browser attaches to the file describing what kind of data it is (like image/png) — similar to the Content-Type header we talked about earlier, but specifically for this one file inside the form data.
+
+cb stands for "callback" — it's how you tell Multer whether to accept or reject the file:
+
+cb(null, true) → "no error, and yes, accept this file"
+cb(new Error('...')) → "reject it, here's why"
+
+Why mimetype instead of checking the file extension (like we did before with path.extname)? Because with memory storage, there's no saved file path to inspect an extension from — but mimetype is available regardless of storage type, and it's actually a more reliable check anyway (an extension can be renamed; mimetype reflects what the browser detected the file actually is).
+
+javascript
+module.exports = upload;
+
+Exports this configured Multer instance so your routes can use it, exactly like before — e.g., upload.single('image') in your route file.
+
+Cloudinaryhelper/helper.js
+javascript
+const Cloudinary = require('../Config/Cloudinary.js');
+
+Imports your already-configured Cloudinary connection (the one with your cloud name, API key, and secret set up).
+
+javascript
+const uploadFile = (fileBuffer) => {
+    return new Promise((resolve, reject) => {
+
+This function now takes a buffer (raw file bytes sitting in memory) instead of a file path. It wraps everything in a new Promise(...) — this is necessary because upload_stream (below) works with callbacks, not async/await directly, so wrapping it in a Promise lets you still use await uploadFile(...) cleanly in your controller, just like before.
+
+javascript
+        const stream = Cloudinary.uploader.upload_stream(
+            { resource_type: 'auto' },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve({
+                    URL: result.secure_url,
+                    publicId: result.public_id
+                });
+            }
+        );
+
+upload_stream is Cloudinary's method for uploading data that's already in memory, rather than reading from a file path on disk (which is what the regular .upload() method expects). It takes two things:
+
+Options — { resource_type: 'auto' }, same as before, tells Cloudinary to auto-detect whether it's an image/video/file
+A callback function — runs once the upload finishes. If there's an error, we reject(error) (the Promise fails). If it succeeds, we resolve({...}) with the URL and public ID — same shape you were already using.
+javascript
+        stream.end(fileBuffer);
+    });
+}
+
+upload_stream returns a writable stream — think of it like an open pipe waiting for data to be poured in. stream.end(fileBuffer) is literally pouring your file's raw bytes into that pipe and closing it, which triggers the actual upload to Cloudinary's servers. Once Cloudinary finishes processing it, the callback from above fires with either the error or the result.
+
+javascript
+module.exports = { uploadFile };
+
+Exports the function the same way as before, so your controller can still do:
+
+js
+const { uploadFile } = require('../Cloudinaryhelper/helper');
+const { URL } = await uploadFile(req.file.buffer);
+
+The core mental shift from before: previously, the flow was file → saved to disk → read from disk → sent to Cloudinary → deleted from disk. Now it's file → held in memory → sent directly to Cloudinary → memory is automatically freed once the request finishes — one less step, and nothing ever touches your server's hard drive.
