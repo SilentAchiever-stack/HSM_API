@@ -1,8 +1,8 @@
 # Hotel System Management API
 
-A backend API for managing hotel operations end to end — room availability, guest
+A backend API for managing hotel operations end to end: room availability, guest
 bookings, payments, receptionist check-ins, and admin oversight. Built with Node.js,
-Express, and MongoDB, with role-based access across four distinct user types: guest,
+Express, and MongoDB, with role-based access across three distinct user types: guest,
 receptionist, and admin.
 
 **Live URL:** https://hsm-api.onrender.com
@@ -26,14 +26,14 @@ receptionist, and admin.
 
 ## Overview
 
-This project is a REST API for a hotel system — the backend that would sit behind a
+This project is a REST API for a hotel system, the backend that would sit behind a
 hotel's booking website or internal staff dashboard. It models a real operational
 workflow: a guest searches for and books a room, pays for it, a receptionist confirms
 the payment and checks the guest in, and an admin manages rooms, hotels, and handles
 issues escalated by staff.
 
 The project was originally built with Prisma and PostgreSQL, then fully converted to
-MongoDB with Mongoose — including redesigning how relationships between users, rooms,
+MongoDB with Mongoose, including redesigning how relationships between users, rooms,
 bookings, and payments work, since MongoDB doesn't have foreign keys the way a
 relational database does.
 
@@ -98,14 +98,13 @@ The project follows a layered backend structure:
 Router      -->  defines URL paths (e.g. POST /api/guest/bookings)
 Controller  -->  contains the actual logic for each route
 Middleware  -->  runs before a route (auth checks, role checks, file upload handling)
-Model       -->  defines the shape of data stored in MongoDB (User, Hotel, Room,
-                  Booking, Payment, Issue)
+Model       -->  defines the shape of data stored in MongoDB (User, Hotel, Room, Booking, Payment, Issue)
 
-Since MongoDB has no foreign keys, relationships between collections are modeled using
-Mongoose's ObjectId references combined with `.populate()` — for example, a Booking
-stores a reference to a User and a Room, and populating those references at query time
-pulls in the full guest and room details without duplicating that data across
-collections.
+Since MongoDB has no foreign keys, relationships between collections are modeled
+using Mongoose's ObjectId references combined with .populate(). For example, a
+Booking stores a reference to a User and a Room, and populating those references at
+query time pulls in the full guest and room details without duplicating that data
+across collections.
 
 ---
 
@@ -121,14 +120,14 @@ Base URL: https://hsm-api.onrender.com
 | POST | /api/users/login | Log in and receive a JWT |
 | PATCH | /api/users/mustchange-password | Force a password change on first login |
 
-**Public** (no login required)
+**Public (no login required)**
 
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | /api/public/rooms | Browse all available rooms |
 | GET | /api/public/hotels | View the list of hotels |
 
-**Guest** (requires login)
+**Guest (requires login)**
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -138,7 +137,7 @@ Base URL: https://hsm-api.onrender.com
 | GET | /api/guest/bookings | View all personal bookings |
 | GET | /api/guest/bookings/:bookingId | View a single booking's details |
 
-**Receptionist** (requires login + receptionist or admin role)
+**Receptionist (requires login + receptionist or admin role)**
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -147,7 +146,7 @@ Base URL: https://hsm-api.onrender.com
 | PATCH | /api/receptionist/bookings/:bookingId/checkin | Check a guest in |
 | POST | /api/receptionist/issues | Report an issue to admin |
 
-**Admin** (requires login + admin role)
+**Admin (requires login + admin role)**
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -166,14 +165,14 @@ Base URL: https://hsm-api.onrender.com
 The following variables must be set (in a local .env file for development, or in your
 hosting provider's environment settings for production):
 
-MONGODB_URI=            # your MongoDB connection string
-JWT_SECRET=              # used to sign auth tokens
-JWT_SECRET_KEY=          # used to sign auth tokens
-CLOUDINARY_CLOUD_NAME=   # from your Cloudinary dashboard
-CLOUDINARY_API_KEY=      # from your Cloudinary dashboard
-CLOUDINARY_API_SECRET=   # from your Cloudinary dashboard
+MONGODB_URI=              # your MongoDB connection string
+JWT_SECRET=               # used to sign auth tokens
+JWT_SECRET_KEY=           # used to sign auth tokens
+CLOUDINARY_CLOUD_NAME=    # from your Cloudinary dashboard
+CLOUDINARY_API_KEY=       # from your Cloudinary dashboard
+CLOUDINARY_API_SECRET=    # from your Cloudinary dashboard
 NODE_ENV=                 # "development" or "production"
-PORT=                      # defaults to 3000 if not set
+PORT=                     # defaults to 3000 if not set
 
 None of these values should ever be committed to version control. The .env file is
 excluded via .gitignore.
@@ -182,13 +181,17 @@ excluded via .gitignore.
 
 ## Running Locally
 
+```
 git clone [your repo link]
 cd HSM_Api
 npm install
+```
 
-Create a .env file in the project root with the variables listed above, then:
+Create a .env file in the project root with the variables listed above, then run:
 
+```
 npm run dev
+```
 
 The server will start on http://localhost:3000 (or whichever port is set in .env).
 
@@ -196,7 +199,9 @@ The server will start on http://localhost:3000 (or whichever port is set in .env
 
 ## Running with Docker
 
+```
 docker compose up --build
+```
 
 This builds the app image from the included Dockerfile and starts the container. Any
 time application code or dependencies change, rebuild with --build so the container
@@ -210,37 +215,37 @@ reflects the latest version rather than reusing a stale image.
 with Prisma and PostgreSQL, where relationships between users, rooms, bookings, and
 payments were enforced directly by the database through foreign keys. Converting to
 MongoDB meant redesigning those relationships as ObjectId references between
-collections, and rewriting every query that previously relied on Prisma's `include` to
-instead use Mongoose's `.populate()` — including cases where a related record (like a
-payment) lives in its own separate collection rather than being nested or automatically
-joined.
+collections, and rewriting every query that previously relied on Prisma's include to
+instead use Mongoose's .populate(), including cases where a related record (like a
+payment) lives in its own separate collection rather than being nested or
+automatically joined.
 
-**Preventing double bookings without database-level constraints.** With no foreign key
-or unique constraint to lean on, overlap checking for room availability had to be done
-explicitly in application code — querying existing bookings for a room and checking
-whether the requested date range intersects with any of them, before allowing a new
-booking to be created.
+**Preventing double bookings without database-level constraints.** With no foreign
+key or unique constraint to lean on, overlap checking for room availability had to be
+done explicitly in application code: querying existing bookings for a room and
+checking whether the requested date range intersects with any of them, before
+allowing a new booking to be created.
 
 **Careful review after reusing code across projects.** Some backend files were
 initially copied over from an earlier, similarly structured project as a starting
 point. This surfaced a good lesson: a file that looks complete can still reference
-functions, models, or middleware exports that don't exist in the new project, producing
-errors that only appear once the specific route is actually called — reinforcing the
-importance of tracing every import back to its real source rather than assuming
-copied code will work unmodified.
+functions, models, or middleware exports that don't exist in the new project,
+producing errors that only appear once the specific route is actually called. It
+reinforced the importance of tracing every import back to its real source rather than
+assuming copied code will work unmodified.
 
-**Consistent local development across multiple concurrent projects.** Running several
-Node projects locally at once surfaced port conflicts, since each defaulted to the same
-port. Solved by assigning each project its own port via environment variables, and by
-building the habit of rebuilding Docker images (`--build`) after any code change rather
-than assuming a running container reflects the latest edits.
+**Consistent local development across multiple concurrent projects.** Running
+several Node projects locally at once surfaced port conflicts, since each defaulted
+to the same port. Solved by assigning each project its own port via environment
+variables, and by building the habit of rebuilding Docker images (--build) after any
+code change rather than assuming a running container reflects the latest edits.
 
 ---
 
 ## Future Improvements
 
-- Add automated tests (unit tests for controllers, integration tests for full booking
-  flows)
+- Add automated tests (unit tests for controllers, integration tests for full
+  booking flows)
 - Add pagination to endpoints that return large lists, like all bookings or all rooms
 - Add email notifications for booking confirmations and payment receipts
 - Add an admin dashboard summary endpoint (occupancy rate, revenue, open issues)
